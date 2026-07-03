@@ -1,5 +1,6 @@
 # PersistenceInference.jl
 
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaTDA.github.io/PersistenceInference.jl/dev/)
 [![CI](https://github.com/JuliaTDA/PersistenceInference.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JuliaTDA/PersistenceInference.jl/actions/workflows/CI.yml)
 
 Statistical inference on persistence diagrams for the
