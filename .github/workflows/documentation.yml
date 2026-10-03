@@ -25,8 +25,8 @@ jobs:
         with:
           version: '1'
       - uses: julia-actions/cache@v2
-      # PersistenceInference builds on the JuliaTDA forks of Ripserer and
-      # PersistenceDiagrams, which are not yet registered; `develop` them (and
+      # PersistenceInference builds on the JuliaTDA forks of TDARipserer and
+      # TDAPersistenceDiagrams, which are not yet registered; `develop` them (and
       # the package itself) into the docs environment before building.
       - name: Develop unregistered ecosystem packages
         run: |

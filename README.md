@@ -43,18 +43,20 @@ composable, multiple-dispatch foundation.
 ## Installation
 
 `PersistenceInference.jl` builds on the JuliaTDA forks of
-[Ripserer.jl](https://github.com/JuliaTDA/Ripserer.jl) and
-[PersistenceDiagrams.jl](https://github.com/JuliaTDA/PersistenceDiagrams.jl).
+[TDARipserer.jl](https://github.com/JuliaTDA/Ripserer.jl) and
+[TDAPersistenceDiagrams.jl](https://github.com/JuliaTDA/PersistenceDiagrams.jl).
 Until everything is registered, develop the dependencies from their URLs:
 
 ```julia
 using Pkg
-Pkg.develop(url = "https://github.com/JuliaTDA/Ripserer.jl")
-Pkg.develop(url = "https://github.com/JuliaTDA/PersistenceDiagrams.jl")
-Pkg.develop(url = "https://github.com/JuliaTDA/PersistenceInference.jl")
+Pkg.develop([
+    PackageSpec(url = "https://github.com/JuliaTDA/PersistenceDiagrams.jl"),
+    PackageSpec(url = "https://github.com/JuliaTDA/Ripserer.jl"),
+    PackageSpec(url = "https://github.com/JuliaTDA/PersistenceInference.jl"),
+])
 ```
 
-The package depends only on `Ripserer`, `PersistenceDiagrams`, `Statistics`
+The package depends only on `TDARipserer`, `TDAPersistenceDiagrams`, `Statistics`
 and `Random` — deliberately lean. It accepts plain vectors of points (tuples
 or `SVector`s), so it composes with `MetricSpaces.EuclideanSpace` (which is a
 vector of `SVector` points) without taking a dependency on `MetricSpaces.jl`.
@@ -116,7 +118,7 @@ The p-value is `(1 + #{perm stat ≥ observed}) / (1 + n_perm)`, so it is always
 in `(0, 1]` and valid for any number of permutations.
 
 > **Cost.** `permutation_test` recomputes persistent homology for every
-> permutation, so its cost is `O(n_perm × ripserer)`. Ripserer is fast on small
+> permutation, so its cost is `O(n_perm × ripserer)`. TDARipserer is fast on small
 > clouds; still, keep the cloud sizes and `n_perm` modest. Pass `progress=true`
 > for sparse progress output on longer runs.
 

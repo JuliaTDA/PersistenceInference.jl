@@ -31,19 +31,21 @@ persistence diagrams**.
 ## Installation
 
 `PersistenceInference.jl` builds on the JuliaTDA forks of
-[Ripserer.jl](https://github.com/JuliaTDA/Ripserer.jl) and
-[PersistenceDiagrams.jl](https://github.com/JuliaTDA/PersistenceDiagrams.jl).
+[TDARipserer.jl](https://github.com/JuliaTDA/Ripserer.jl) and
+[TDAPersistenceDiagrams.jl](https://github.com/JuliaTDA/PersistenceDiagrams.jl).
 Until everything is registered in the General registry, `develop` the
 dependencies from their URLs:
 
 ```julia
 using Pkg
-Pkg.develop(url = "https://github.com/JuliaTDA/Ripserer.jl")
-Pkg.develop(url = "https://github.com/JuliaTDA/PersistenceDiagrams.jl")
-Pkg.develop(url = "https://github.com/JuliaTDA/PersistenceInference.jl")
+Pkg.develop([
+    PackageSpec(url = "https://github.com/JuliaTDA/PersistenceDiagrams.jl"),
+    PackageSpec(url = "https://github.com/JuliaTDA/Ripserer.jl"),
+    PackageSpec(url = "https://github.com/JuliaTDA/PersistenceInference.jl"),
+])
 ```
 
-The package depends only on `Ripserer`, `PersistenceDiagrams`, `Statistics` and
+The package depends only on `TDARipserer`, `TDAPersistenceDiagrams`, `Statistics` and
 `Random` — deliberately lean. It accepts plain vectors of points (tuples or
 `SVector`s), so it composes with `MetricSpaces.EuclideanSpace` (itself a vector
 of `SVector` points) without taking a dependency on `MetricSpaces.jl`.

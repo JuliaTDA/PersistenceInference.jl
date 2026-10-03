@@ -54,7 +54,7 @@ Permutation test for whether two point clouds `X` and `Y` have different
 persistent homology in dimension `dim`, following Robinson & Turner (2017).
 
 `X` and `Y` are vectors of points of the same kind accepted by
-[`Ripserer.ripserer`](https://github.com/JuliaTDA/Ripserer.jl) (tuples,
+[`TDARipserer.ripserer`](https://github.com/JuliaTDA/Ripserer.jl) (tuples,
 `SVector`s, or a `MetricSpaces.EuclideanSpace`, which is a vector of points).
 They must contain points of compatible type so they can be pooled.
 
@@ -77,7 +77,7 @@ in `(0, 1]` and valid for any `n_perm`.
 
 !!! warning "Cost"
     This is `O(n_perm × cost(ripserer))`. Each permutation recomputes
-    persistent homology of the full pooled cloud. Ripserer is fast on small
+    persistent homology of the full pooled cloud. TDARipserer is fast on small
     clouds, but keep `n_perm` and the cloud sizes modest, or be patient. The
     default examples in this package are intentionally tiny.
 

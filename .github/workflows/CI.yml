@@ -35,7 +35,7 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
-      # Test against the JuliaTDA forks of Ripserer and PersistenceDiagrams by
+      # Test against the JuliaTDA forks of TDARipserer and TDAPersistenceDiagrams by
       # `develop`ing them straight from their GitHub URLs before resolving.
       - name: Develop ecosystem packages
         run: |

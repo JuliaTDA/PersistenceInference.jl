@@ -1,5 +1,5 @@
 using PersistenceInference
-using PersistenceDiagrams: PersistenceDiagram, Bottleneck, Wasserstein, persistence
+using TDAPersistenceDiagrams: PersistenceDiagram, Bottleneck, Wasserstein, persistence
 using Random
 using Test
 

@@ -24,8 +24,8 @@ module PersistenceInference
 
 using Random
 using Statistics: quantile
-using Ripserer: ripserer
-using PersistenceDiagrams: PersistenceDiagram, PersistenceInterval, Bottleneck, Wasserstein,
+using TDARipserer: ripserer
+using TDAPersistenceDiagrams: PersistenceDiagram, PersistenceInterval, Bottleneck, Wasserstein,
     birth, death, persistence
 
 export bootstrap_diagram, BootstrapResult, significant

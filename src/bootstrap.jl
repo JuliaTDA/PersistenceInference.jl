@@ -44,7 +44,7 @@ Compute a bootstrap confidence set for the persistence diagram of the point
 cloud `X`, following Fasy et al. (2014).
 
 `X` is a vector of points; each point may be a `Tuple`, an `SVector`, or any
-type accepted by [`Ripserer.ripserer`](https://github.com/JuliaTDA/Ripserer.jl).
+type accepted by [`TDARipserer.ripserer`](https://github.com/JuliaTDA/Ripserer.jl).
 A `MetricSpaces.EuclideanSpace` works directly because it is a vector of
 `SVector` points.
 
@@ -74,7 +74,7 @@ a feature is *distinguishable from noise* only if its persistence exceeds
   size `length(X)` (the standard nonparametric bootstrap). A smaller value
   gives the `m`-out-of-`n` subsampling bootstrap, which can be both faster and
   more stable.
-- `distance=Bottleneck()`: a `PersistenceDiagrams` matching distance, callable
+- `distance=Bottleneck()`: a `TDAPersistenceDiagrams` matching distance, callable
   as `distance(d1, d2)`. `Bottleneck()` matches Fasy et al.; `Wasserstein(q)`
   is also accepted.
 - `rng=Random.default_rng()`: random number generator, for reproducibility.
