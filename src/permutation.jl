@@ -22,8 +22,9 @@ the persistent homology of two point clouds at a fixed homology dimension.
 - `n_perm::Int`: the number of permutations used.
 - `dim::Int`: the homology dimension tested.
 
-A small p-value is evidence that the two point clouds have *different* topology
-in dimension `dim`.
+A small p-value is evidence against the exchangeable point-distribution null,
+detected through persistence diagrams in dimension `dim`. Equality of underlying
+topology alone does not ensure exchangeability or test validity.
 """
 struct PermutationTestResult
     pvalue::Float64
@@ -73,11 +74,14 @@ exchangeable, so:
 3. The p-value is `(1 + #{perm stat ≥ observed}) / (1 + n_perm)`.
 
 The `+1` in numerator and denominator (Phipson & Smyth 2010) keeps the p-value
-in `(0, 1]` and valid for any `n_perm`.
+in `(0, 1]`, with minimum `1/(n_perm+1)`. Under the exchangeable null it gives
+a conservative Monte Carlo permutation test; this function samples permutations
+rather than enumerating the full distribution. Paired, clustered or dependent
+samples need design-specific randomization not implemented here.
 
 !!! warning "Cost"
     This is `O(n_perm × cost(ripserer))`. Each permutation recomputes
-    persistent homology of the full pooled cloud. TDARipserer is fast on small
+    persistent homology of each relabelled group. TDARipserer is fast on small
     clouds, but keep `n_perm` and the cloud sizes modest, or be patient. The
     default examples in this package are intentionally tiny.
 

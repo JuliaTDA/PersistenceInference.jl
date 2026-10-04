@@ -1,0 +1,12 @@
+[deps]
+PersistenceInference = "118e6604-bb3b-4764-bf76-cf6e7c19a9bd"
+TDAPersistenceDiagrams = "bbe17acd-c4ea-4f01-a2b8-42969f873a90"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+[compat]
+julia = "1.9"
+PersistenceInference = "0.1"
+TDAPersistenceDiagrams = "0.1"
+DelimitedFiles = "1"

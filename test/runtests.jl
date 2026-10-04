@@ -1,7 +1,12 @@
 using PersistenceInference
+using Aqua
 using TDAPersistenceDiagrams: PersistenceDiagram, Bottleneck, Wasserstein, persistence
 using Random
 using Test
+
+Aqua.test_all(PersistenceInference)
+
+include("round2.jl")
 
 # --- helpers ----------------------------------------------------------------
 

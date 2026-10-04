@@ -1,119 +1,79 @@
 # PersistenceInference.jl
 
-*Statistical inference on persistence diagrams for the [JuliaTDA](https://github.com/JuliaTDA) ecosystem.*
-
 ```@meta
 CurrentModule = PersistenceInference
 ```
 
-Persistent homology turns a point cloud into a *persistence diagram*: a multiset
-of birth–death pairs, one per topological feature (connected components in
-dimension 0, loops in dimension 1, voids in dimension 2, …). The persistence of
-a feature — its death minus its birth — measures how long it survives across
-scales, and is the usual proxy for how "real" it is. But raw persistence is
-*descriptive*, not *inferential*: it tells you a feature is long-lived, not
-whether it is statistically distinguishable from sampling noise.
+A persistence diagram records *when* a topological feature appears and disappears
+as a scale changes. For a bar `(b, d)`, its persistence is `d - b`: connected
+components are in H₀, loops in H₁, and cavities in H₂. A bar that lives a long
+time is often interesting, but a statistical question needs more than its length.
+What is random? What population or null model are you studying?
 
-`PersistenceInference.jl` answers the two questions that turn persistent
-homology into an inferential tool:
+`PersistenceInference.jl` supplies five complementary workflows. Start by
+identifying the unit that was sampled independently.
 
-* Given **one** sample — *which features are signal and which are noise?*
-  → [`bootstrap_diagram`](@ref) + [`significant`](@ref)
-  (bootstrap confidence sets, Fasy et al. 2014).
-* Given **two** samples — *do they have the same topology?*
-  → [`permutation_test`](@ref)
-  (two-sample permutation testing, Robinson & Turner 2017).
+| Data and target | Workflow | Read next |
+| --- | --- | --- |
+| One point cloud; resampling variability of its diagram | [`bootstrap_diagram`](@ref), [`significant`](@ref) | [Point-cloud inference](point_clouds.md) |
+| Two independent point samples; an exchangeable-label null | [`permutation_test`](@ref) | [Point-cloud inference](point_clouds.md) |
+| Many independent diagrams; a population mean function | [`confidence_band`](@ref), [`multiplier_bootstrap`](@ref) | [Functional bands](functional_inference.md) |
+| One diagram/cloud; maximum finite persistence under an explicit null | [`max_persistence_significance`](@ref) | [Hypothesis tests](hypothesis_tests.md) |
+| Paired diagrams and covariates; independence | [`independence_test`](@ref) | [Hypothesis tests](hypothesis_tests.md) |
 
-This capability is the strategic differentiator of the Julia TDA stack: it makes
-Julia the **second ecosystem, after R, with proper statistical inference on
-persistence diagrams**.
+For example, 40 subjects with one scan each give 40 independent diagrams if the
+subjects are independently sampled. The 200 bars in a single subject's diagram
+are not 200 independent subjects. Bootstrap replicas of that scan are also not
+new subjects. This distinction determines which API is appropriate.
 
-## Installation
+## Install the package and its fork dependencies
 
-`PersistenceInference.jl` builds on the JuliaTDA forks of
-[TDARipserer.jl](https://github.com/JuliaTDA/Ripserer.jl) and
-[TDAPersistenceDiagrams.jl](https://github.com/JuliaTDA/PersistenceDiagrams.jl).
-Until everything is registered in the General registry, `develop` the
-dependencies from their URLs:
+Use Julia ≥1.9 and a dedicated environment:
 
 ```julia
 using Pkg
+Pkg.activate("tda-inference")
 Pkg.develop([
-    PackageSpec(url = "https://github.com/JuliaTDA/PersistenceDiagrams.jl"),
-    PackageSpec(url = "https://github.com/JuliaTDA/Ripserer.jl"),
-    PackageSpec(url = "https://github.com/JuliaTDA/PersistenceInference.jl"),
+    PackageSpec(url="https://github.com/JuliaTDA/PersistenceDiagrams.jl"),
+    PackageSpec(url="https://github.com/JuliaTDA/Ripserer.jl"),
+    PackageSpec(url="https://github.com/JuliaTDA/PersistenceInference.jl"),
 ])
 ```
 
-The package depends only on `TDARipserer`, `TDAPersistenceDiagrams`, `Statistics` and
-`Random` — deliberately lean. It accepts plain vectors of points (tuples or
-`SVector`s), so it composes with `MetricSpaces.EuclideanSpace` (itself a vector
-of `SVector` points) without taking a dependency on `MetricSpaces.jl`.
+The first two repositories provide the modules `TDAPersistenceDiagrams` and
+`TDARipserer`; their names and UUIDs differ from the upstream registered packages.
+For local checkouts in a shared workspace, use `PackageSpec(path="...")` instead.
+Loading `PersistenceInference` loads its dependencies, but names such as
+`PersistenceDiagram`, `Bottleneck`, and `Wasserstein` belong to
+`TDAPersistenceDiagrams`, so import them explicitly in your own code.
 
-## Confidence sets — [`bootstrap_diagram`](@ref)
+## A complete first example
 
-Resample a point cloud, measure how far each bootstrap diagram sits from the
-reference diagram (per homology dimension), and read off the `(1 - α)` quantile
-as the confidence-set radius `c`. Features with persistence above `2c` are
-significant.
+Here the data are independent diagrams, each with one randomly sized loop.
+This controlled toy experiment makes it easy to see the target: a mean
+landscape function across diagrams, rather than a diagram of an averaged cloud.
 
-```julia
-using PersistenceInference, Random
-
-# a noisy circle: should have exactly one significant loop (H1)
-rng = Random.Xoshiro(42)
-n = 60
-θ = range(0, 2π; length = n + 1)[1:n]
-X = [(cos(t) + 0.05 * randn(rng), sin(t) + 0.05 * randn(rng)) for t in θ]
-
-result = bootstrap_diagram(X; n_boot = 100, alpha = 0.05, dim_max = 1, rng = rng)
-
-result                      # pretty summary with per-dimension radii
-result.radius[2]            # confidence half-width c for H1
-significant(result, 1)      # the H1 features distinguishable from noise
+```@example first_band
+using PersistenceInference, TDAPersistenceDiagrams, Random
+rng = Xoshiro(42)
+diagrams = [PersistenceDiagram([(0.0, 1.0 + rand(rng))]; dim=1) for _ in 1:40]
+band = confidence_band(diagrams; grid=range(0, 2; length=41),
+                       n_boot=199, rng=rng)
+@assert band.n_samples == 40
+@assert all(band.lower .<= band.estimate .<= band.upper)
+(samples=band.n_samples, grid_points=length(band.grid),
+ mean_at_one=band.estimate[21], interval_at_one=(band.lower[21], band.upper[21]))
 ```
 
-[`significant`](@ref)`(result, dim)` returns the intervals of the reference
-diagram in homology dimension `dim` whose persistence exceeds
-`2 * result.radius[dim + 1]`. A `subsample_size` keyword switches to the faster
-`m`-out-of-`n` bootstrap, and `distance` lets you use `Wasserstein(q)` instead of
-the default `Bottleneck()`.
+The endpoints are a simultaneous band for the **population mean at the fixed
+supplied times**, under the assumptions described in [Functional confidence
+bands](functional_inference.md). They are not intervals for an individual
+subject or guarantees at times between grid points.
 
-## Two-sample testing — [`permutation_test`](@ref)
+## A sensible reading order
 
-Test whether two point clouds have the same topology in a given dimension. The
-statistic is the `q`-Wasserstein loss `W_q^q` between the two diagrams; the null
-distribution is generated by pooling the points and re-splitting them at random.
-
-```julia
-using PersistenceInference, Random
-
-circle(n, σ, rng) = [(cos(t) + σ*randn(rng), sin(t) + σ*randn(rng))
-                     for t in range(0, 2π; length = n+1)[1:n]]
-blob(n, rng)      = [(2*rand(rng) - 1, 2*rand(rng) - 1) for _ in 1:n]
-
-rng = Random.Xoshiro(1)
-X = circle(30, 0.05, rng)
-Y = blob(30, rng)
-
-result = permutation_test(X, Y; n_perm = 999, dim = 1, q = 2, rng = rng)
-
-result.pvalue   # small: circle and blob differ topologically in H1
-```
-
-The p-value is `(1 + #{perm stat ≥ observed}) / (1 + n_perm)`, so it is always in
-`(0, 1]` and valid for any number of permutations. Because `permutation_test`
-recomputes persistent homology for every permutation, its cost is
-`O(n_perm × ripserer)` — keep the cloud sizes and `n_perm` modest.
-
-## References
-
-- B. T. Fasy, F. Lecci, A. Rinaldo, L. Wasserman, S. Balakrishnan & A. Singh
-  (2014). **Confidence sets for persistence diagrams.** *The Annals of
-  Statistics*, 42(6), 2301–2339. <https://doi.org/10.1214/14-AOS1252>
-- A. Robinson & K. Turner (2017). **Hypothesis testing for topological data
-  analysis.** *Journal of Applied and Computational Topology*, 1(2), 241–261.
-  <https://doi.org/10.1007/s41468-017-0008-7>
-- B. Phipson & G. K. Smyth (2010). **Permutation P-values should never be zero.**
-  *Statistical Applications in Genetics and Molecular Biology*, 9(1).
-  (Motivates the `+1` correction in the permutation p-value.)
+Read the tutorial matching your design, then [Practical choices and
+validation](practical.md) before interpreting a p-value or confidence level.
+The [API reference](api.md) lists every exported function and result type.
+Tutorial replicate counts keep local builds quick; choose analysis counts based
+on Monte Carlo resolution and computation cost.

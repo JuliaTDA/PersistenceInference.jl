@@ -1,6 +1,9 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 PersistenceInference = "118e6604-bb3b-4764-bf76-cf6e7c19a9bd"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+TDAPersistenceDiagrams = "bbe17acd-c4ea-4f01-a2b8-42969f873a90"
 
 [compat]
 Documenter = "1"
+TDAPersistenceDiagrams = "0.1"

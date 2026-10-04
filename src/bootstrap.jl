@@ -8,16 +8,17 @@
 """
     BootstrapResult
 
-Result of [`bootstrap_diagram`](@ref): a bootstrap confidence set for the
-persistence diagram of a point cloud.
+Result of [`bootstrap_diagram`](@ref): empirical bootstrap diagram-distance
+radii and the reference persistence diagrams of a point cloud.
 
 # Fields
 
 - `diagrams::Vector{<:PersistenceDiagram}`: the reference diagrams computed
   from the full sample, one per homology dimension `0:dim_max`.
 - `radius::Vector{Float64}`: the per-dimension confidence-set radius `c`,
-  i.e. the `(1 - alpha)` quantile of the bootstrap distances. A feature with
-  persistence greater than `2 * radius[d + 1]` is significant at level `alpha`.
+  i.e. the `(1 - alpha)` quantile of the bootstrap distances. The selection
+  helper retains finite features longer than `2 * radius[d + 1]`; a confidence
+  interpretation requires justified bootstrap calibration for the target.
 - `distances::Vector{Vector{Float64}}`: the raw bootstrap distances, one
   vector of length `n_boot` per homology dimension.
 - `alpha::Float64`: the significance level used.
@@ -40,8 +41,8 @@ end
                       subsample_size=nothing, distance=Bottleneck(),
                       rng=Random.default_rng(), ripserer_kwargs...)
 
-Compute a bootstrap confidence set for the persistence diagram of the point
-cloud `X`, following Fasy et al. (2014).
+Compute empirical bootstrap diagram-distance radii for the point cloud `X`,
+motivated by the confidence-set framework of Fasy et al. (2014).
 
 `X` is a vector of points; each point may be a `Tuple`, an `SVector`, or any
 type accepted by [`TDARipserer.ripserer`](https://github.com/JuliaTDA/Ripserer.jl).
@@ -58,11 +59,13 @@ A `MetricSpaces.EuclideanSpace` works directly because it is a vector of
 3. The confidence-set radius `c` in dimension `d` is the empirical
    `(1 - alpha)` quantile of those `n_boot` distances.
 
-By the stability theorem, the true diagram lies within bottleneck distance `c`
-of the reference diagram with asymptotic probability `1 - alpha`. In the
-diagram, this is the "confidence band" of half-width `c` around the diagonal:
-a feature is *distinguishable from noise* only if its persistence exceeds
-`2c`. See [`significant`](@ref).
+For a validly calibrated bottleneck confidence radius `c`, a finite bar longer
+than `2c` cannot be matched to the diagonal inside that confidence ball. Stability
+explains this geometric threshold; it does not by itself establish coverage of
+this empirical resampling scheme for an arbitrary population target. The function
+does not estimate a support/density model or apply an m/n normalization. Radii
+are per dimension, without a simultaneous correction across dimensions. See
+[`significant`](@ref) and the point-cloud inference tutorial for interpretation.
 
 # Arguments
 
@@ -72,8 +75,8 @@ a feature is *distinguishable from noise* only if its persistence exceeds
 - `dim_max=1`: maximum homology dimension to compute.
 - `subsample_size=nothing`: resample size. `nothing` means the full sample
   size `length(X)` (the standard nonparametric bootstrap). A smaller value
-  gives the `m`-out-of-`n` subsampling bootstrap, which can be both faster and
-  more stable.
+  gives an `m`-out-of-`n` bootstrap **with replacement**, not subsampling without
+  replacement. The raw quantile is not rescaled, so its calibration can differ.
 - `distance=Bottleneck()`: a `TDAPersistenceDiagrams` matching distance, callable
   as `distance(d1, d2)`. `Bottleneck()` matches Fasy et al.; `Wasserstein(q)`
   is also accepted.
@@ -146,8 +149,9 @@ end
     significant(result::BootstrapResult, dim::Integer)
 
 Return the intervals of the reference diagram in homology dimension `dim`
-whose persistence exceeds `2 * result.radius[dim + 1]` — that is, the features
-distinguishable from noise at level `result.alpha`.
+whose persistence exceeds `2 * result.radius[dim + 1]`. Interpreting these as
+features distinguishable from noise requires a valid confidence radius; the
+helper does not itself verify bootstrap coverage.
 
 In the confidence-set picture of Fasy et al. (2014), the band of half-width
 `c = radius[dim + 1]` around the diagonal is the region where points cannot be
@@ -163,7 +167,9 @@ distance to the diagonal, `(d - b) / 2`, exceeds `c`, i.e. when
 # Returns
 
 A vector of `PersistenceInterval`s (a subset of `result.diagrams[dim + 1]`).
-Infinite intervals are always returned as significant.
+Infinite intervals are always returned by convention. Their retention is not
+statistical evidence for essential features; a truncated filtration may leave
+classes unresolved.
 
 # Example
 

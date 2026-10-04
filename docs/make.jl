@@ -19,11 +19,17 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
+        "Point-cloud inference" => "point_clouds.md",
+        "Functional confidence bands" => "functional_inference.md",
+        "Null maxima and independence" => "hypothesis_tests.md",
+        "Practical choices and validation" => "practical.md",
         "API reference" => "api.md",
     ],
 )
 
-deploydocs(;
-    repo = "github.com/JuliaTDA/PersistenceInference.jl",
-    devbranch = "main",
-)
+if get(ENV, "JULIATDA_DOCS_DEPLOY", "false") == "true"
+    deploydocs(;
+        repo = "github.com/JuliaTDA/PersistenceInference.jl",
+        devbranch = "main",
+    )
+end
