@@ -153,6 +153,19 @@ uniform_blob(n, rng) = [(2rand(rng) - 1, 2rand(rng) - 1) for _ in 1:n]
         @test 0 < r1.pvalue ≤ 1
     end
 
+    @testset "permutation workers preserve seeded order" begin
+        X = [(cos(t), sin(t)) for t in range(0, 5; length=17)]
+        Y = [(cos(t), sin(t) / 3) for t in range(0, 6; length=19)]
+        serial_rng, threaded_rng = Random.Xoshiro(123), Random.Xoshiro(123)
+        serial = permutation_test(X, Y; n_perm=19, rng=serial_rng, threshold=1.5)
+        threaded = permutation_test(X, Y; n_perm=19, rng=threaded_rng, threshold=1.5, workers=4)
+        @test threaded.null_distribution == serial.null_distribution
+        @test threaded.observed == serial.observed
+        @test threaded.pvalue == serial.pvalue
+        @test rand(threaded_rng) == rand(serial_rng)
+        @test_throws ArgumentError permutation_test(X, Y; workers=0)
+    end
+
     @testset "permutation_test argument validation" begin
         X = noisy_circle(15, 0.05, Random.Xoshiro(1))
         Y = noisy_circle(15, 0.05, Random.Xoshiro(2))

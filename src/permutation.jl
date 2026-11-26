@@ -48,7 +48,7 @@ end
 
 """
     permutation_test(X, Y; n_perm=1000, dim=1, q=2, dim_max=dim,
-                     rng=Random.default_rng(), progress=false,
+                     rng=Random.default_rng(), progress=false, workers=1,
                      ripserer_kwargs...)
 
 Permutation test for whether two point clouds `X` and `Y` have different
@@ -94,6 +94,10 @@ samples need design-specific randomization not implemented here.
 - `dim_max=dim`: maximum homology dimension to compute (must be `≥ dim`).
 - `rng=Random.default_rng()`: random number generator, for reproducibility.
 - `progress=false`: when `true`, print sparse progress (roughly every 10%).
+- `workers=1`: maximum concurrent replicates, capped by the available Julia
+  threads. Permutations are generated on the calling task in seeded order, so
+  their statistics and RNG consumption match serial execution. Use a
+  thread-safe metric when opting into parallelism.
 - `ripserer_kwargs...`: forwarded to `ripserer`.
 
 # Returns
@@ -113,7 +117,7 @@ rng = Random.Xoshiro(1)
 X = circle(30, 0.05, rng)
 Y = blob(30, rng)
 
-result = permutation_test(X, Y; n_perm = 99, dim = 1, rng = rng)
+result = permutation_test(X, Y; n_perm = 99, dim = 1, rng = rng, workers = 4)
 result.pvalue   # small: circle and blob differ topologically
 ```
 
@@ -130,9 +134,11 @@ function permutation_test(
     dim_max::Integer=dim,
     rng::Random.AbstractRNG=Random.default_rng(),
     progress::Bool=false,
+    workers::Integer=1,
     ripserer_kwargs...,
 )
     n_perm ≥ 1 || throw(ArgumentError("`n_perm` must be at least 1"))
+    workers ≥ 1 || throw(ArgumentError("`workers` must be at least 1"))
     dim ≥ 0 || throw(ArgumentError("`dim` must be non-negative"))
     dim_max ≥ dim || throw(ArgumentError("`dim_max` must be at least `dim`"))
     q > 0 || throw(ArgumentError("`q` must be positive"))
@@ -150,26 +156,34 @@ function permutation_test(
     n_total = nx + ny
 
     null_distribution = Vector{Float64}(undef, n_perm)
-    count_ge = 0
+    worker_count = Int(min(workers, Threads.nthreads(), n_perm))
     step = max(1, n_perm ÷ 10)
 
-    for p in 1:n_perm
-        perm = randperm(rng, n_total)
-        group_x = pooled[perm[1:nx]]
-        group_y = pooled[perm[(nx + 1):n_total]]
+    function statistic(perm)
+        group_x = pooled[view(perm, 1:nx)]
+        group_y = pooled[view(perm, (nx + 1):n_total)]
         dx = ripserer(group_x; dim_max=dim_max, ripserer_kwargs...)
         dy = ripserer(group_y; dim_max=dim_max, ripserer_kwargs...)
-        stat = _wqq(dx, dy, dim, q)
-        null_distribution[p] = stat
-        if stat ≥ observed
-            count_ge += 1
+        return _wqq(dx, dy, dim, q)
+    end
+
+    for lo in 1:worker_count:n_perm
+        hi = min(lo + worker_count - 1, n_perm)
+        if worker_count == 1
+            null_distribution[lo] = statistic(randperm(rng, n_total))
+        else
+            permutations = [randperm(rng, n_total) for _ in lo:hi]
+            @sync for (p, perm) in zip(lo:hi, permutations)
+                Threads.@spawn null_distribution[p] = statistic(perm)
+            end
         end
-        if progress && (p % step == 0 || p == n_perm)
-            pct = round(Int, 100 * p / n_perm)
-            println("permutation_test: ", p, "/", n_perm, " (", pct, "%)")
+        if progress && (div(hi, step) > div(lo - 1, step) || hi == n_perm)
+            pct = round(Int, 100 * hi / n_perm)
+            println("permutation_test: ", hi, "/", n_perm, " (", pct, "%)")
         end
     end
 
+    count_ge = count(>=(observed), null_distribution)
     pvalue = (1 + count_ge) / (1 + n_perm)
 
     return PermutationTestResult(pvalue, observed, null_distribution, Int(n_perm), dim)

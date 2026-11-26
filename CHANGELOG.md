@@ -9,6 +9,8 @@ Notable changes to PersistenceInference are recorded here.
 
 ## Unreleased
 
+- Run permutation replicates with bounded parallel workers while preserving seeded order and results.
+
 - Add simultaneous finite-grid mean landscape/Betti confidence bands with Gaussian
   multiplier and empirical bootstrap calibration, including studentization.
 - Add maximum-persistence Monte Carlo significance under an explicit global null
